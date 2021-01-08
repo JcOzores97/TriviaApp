@@ -94,7 +94,6 @@ const ArtistForm = ({ appDispatch, setFormSubmitted }) => {
 		try {
 			const songs = await fetchArtistSongs(artistName.replace(' ', '%20'));
 			const formattedSongs = getFormattedSongs(songs);
-			console.log(formattedSongs);
 			const randomSongs = getRandomElements(formattedSongs, 10);
 			const optionsWithLyrics = await fetchOptionsWithLyrics(randomSongs, artistName.replace(' ', '-'), 5);
 			const optionsWithLyricsSongs = optionsWithLyrics.map((option) => option.song);
@@ -105,7 +104,6 @@ const ArtistForm = ({ appDispatch, setFormSubmitted }) => {
 			dispatch({ type: 'OPTIONS_READY', payload: { gameOptions, artistName } });
 		} catch (error) {
 			dispatch({ type: 'OPTIONS_ERROR', payload: { error, artistName } });
-			console.log(error.message);
 		}
 	}
 
