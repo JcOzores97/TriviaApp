@@ -22,7 +22,7 @@ function roundReducer(state, action) {
 }
 const initialState = {
 	attempts: 0,
-	secondsRemaining: 30,
+	secondsRemaining: 45,
 	selectedOptions: []
 };
 function getRoundScore(attempts, endedByCorrectAnswer) {
@@ -39,12 +39,12 @@ const Round = ({ currentRound, gameDispatch, gameScore, roundOptions, correctOpt
 	useEffect(
 		() => {
 			dispatch({ type: 'ROUND_STARTS' });
-			// const intervalo = setInterval(() => {
-			// 	dispatch({ type: 'TICK' });
-			// }, 1000);
-			// return () => {
-			// 	clearInterval(intervalo);
-			// };
+			const intervalo = setInterval(() => {
+				dispatch({ type: 'TICK' });
+			}, 1000);
+			return () => {
+				clearInterval(intervalo);
+			};
 		},
 		[ currentRound ]
 	);
