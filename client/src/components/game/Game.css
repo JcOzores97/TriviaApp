@@ -1,0 +1,24 @@
+.game {
+	height: 100%;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: fade 0.5s linear both;
+}
+/*Animations*/
+
+@keyframes fade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@media (min-width: 700px) {
+	.game {
+		width: 50%;
+	}
+}

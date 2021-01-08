@@ -1,0 +1,34 @@
+.round-indicator {
+	display: flex;
+	justify-content: space-around;
+	align-items: center;
+}
+.round-indicator__round {
+	border: solid 2px rgba(255, 255, 255, 0.25);
+	color: rgba(255, 255, 255, 0.25);
+	border-radius: 50%;
+	width: 2rem;
+	height: 2rem;
+	padding: 0.25rem;
+}
+
+.round-indicator__round--active {
+	border: solid 2px rgb(3, 190, 248);
+	color: rgb(3, 190, 248);
+	border-radius: 50%;
+	width: 2rem;
+	height: 2rem;
+	padding: 0.25rem;
+	animation: round--active 0.5s linear;
+}
+
+@keyframes round--active {
+	from {
+		border: solid 2px rgba(255, 255, 255, 0.25);
+		color: rgba(255, 255, 255, 0.25);
+	}
+	to {
+		border: solid 2px rgb(3, 190, 248);
+		color: rgb(3, 190, 248);
+	}
+}

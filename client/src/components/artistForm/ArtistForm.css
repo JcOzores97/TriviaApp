@@ -1,0 +1,33 @@
+.artist-form {
+	height: 300px;
+	width: 90%;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	align-items: center;
+}
+
+.artist-form__title {
+	font-size: 2.8rem;
+}
+.artist-form__label {
+	font-size: 1rem;
+}
+.artist-form__input {
+	height: 1.75rem;
+	border: solid 1px #677bc4;
+	background: rgba(255, 255, 255, 0.125);
+	border-radius: 2px;
+	padding: 0.3rem;
+}
+.artist-form__submit {
+	height: 2rem;
+	width: 12rem;
+	background-color: #677bc4;
+	border: 2px solid #677bc4;
+	border-radius: 2px;
+	font-weight: 500;
+}
+.artist-form__submit:disabled {
+	background-color: rgba(103, 123, 196, 0.25);
+}

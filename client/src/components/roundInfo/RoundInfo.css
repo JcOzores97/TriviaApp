@@ -1,0 +1,14 @@
+.round-info {
+	background: rgb(29, 31, 119);
+	padding: 0.5rem;
+	width: 40%;
+	display: flex;
+	justify-content: space-evenly;
+	align-items: center;
+	font-size: 1.1rem;
+	border-radius: 4px;
+	font-weight: 500;
+}
+.round-info__info {
+	width: 2rem;
+}

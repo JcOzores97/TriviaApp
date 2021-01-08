@@ -1,0 +1,41 @@
+.final-results {
+	width: 90%;
+	height: 300px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	animation: fade 0.5s linear both;
+	justify-content: space-evenly;
+}
+
+.final-results__star-container {
+	width: max-content;
+	animation: rotation 3s linear infinite;
+}
+.final-results__star-container > svg {
+	width: 50px;
+	height: 50px;
+}
+h3 {
+	font-size: 1.2rem;
+	font-weight: 500;
+}
+
+/*Animations*/
+
+@keyframes fade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+@keyframes rotation {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(359deg);
+	}
+}
