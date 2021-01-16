@@ -21,26 +21,27 @@ function getFormattedSongs(songs) {
 
 async function fetchOptionsWithLyrics(songs, artist, optionsQuantity) {
 	let optionsWithLyrics = [];
-	let songsCopy = [ ...songs ];
-	for (let index = 0; optionsWithLyrics.length < optionsQuantity && songsCopy.length > 0; index++) {
-		//las canciones en cada iteración refieren al contenido de songs, array dado por el usuario
-		//las modificaciones en cada iteración son sobre la copia del array mencionado anteriormente
+	let remainingSongs = [ ...songs ];
+	for (let index = 0; optionsWithLyrics.length < optionsQuantity && remainingSongs.length > 0; index++) {
+		//se itera hasta que no haya más canciones para buscar letras o se haya generado la cantidad de opciones pedida
+		//En cada iteración:
+		//- la canción de la que se buscara letras se obtiene de songs
+		//- la eliminación de aquella canción de la que se buscará letras se hace sobre remainingSongs
 		try {
 			const currentSong = songs[index];
+			remainingSongs = remainingSongs.filter((s, ind, arr) => ind !== arr.indexOf(currentSong));
 			const apiResponse = await fetch(`https://api.lyrics.ovh/v1/${artist}/${currentSong}`);
 			if (!apiResponse.ok) throw new Error();
 			const lyricsObject = await apiResponse.json();
 			const songWithLyrics = lyricsObject.lyrics !== '' && lyricsObject.lyrics !== '[Instrumental]';
 			if (!songWithLyrics) throw new Error();
-			songsCopy = songsCopy.filter((s, ind, arr) => ind !== arr.indexOf(currentSong));
 			const splittedLyrics = lyricsObject.lyrics.split(/\n/).filter((chunk) => chunk !== '');
-			const randomIndex = Math.floor(Math.random() * (splittedLyrics.length - 4));
+			const randomIndex = Math.floor(Math.random() * (splittedLyrics.length - 3));
 			optionsWithLyrics.push({
 				lyrics: [
 					`"${splittedLyrics[randomIndex]}`,
 					splittedLyrics[randomIndex + 1],
-					splittedLyrics[randomIndex + 2],
-					`${splittedLyrics[randomIndex + 3]}"`
+					`${splittedLyrics[randomIndex + 2]}"`
 				],
 				song: currentSong
 			});
@@ -107,16 +108,14 @@ const ArtistForm = ({ appDispatch, setFormSubmitted }) => {
 		}
 	}
 
+	function handleFormSubmit(ev) {
+		ev.preventDefault();
+		if (artistName.replace(/\s/g, '').length === 0) return;
+		setFormSubmitted(true);
+		fetchGameOptions(artistName, appDispatch);
+	}
 	return (
-		<form
-			onSubmit={(ev) => {
-				ev.preventDefault();
-				if (artistName.replace(/\s/g, '').length === 0) return;
-				setFormSubmitted(true);
-				fetchGameOptions(artistName, appDispatch);
-			}}
-			className="artist-form"
-		>
+		<form onSubmit={handleFormSubmit} className="artist-form">
 			<h2 className="artist-form__title">Trivia App</h2>
 			<label className="artist-form__label" htmlFor="artist-input">
 				Introduce un artista
@@ -126,9 +125,7 @@ const ArtistForm = ({ appDispatch, setFormSubmitted }) => {
 				className="artist-form__input"
 				type="text"
 				value={artistName}
-				onChange={(event) => {
-					setArtistName(event.target.value);
-				}}
+				onChange={(event) => setArtistName(event.target.value)}
 			/>
 			<button className={'artist-form__submit'}>Jugar!</button>
 		</form>
