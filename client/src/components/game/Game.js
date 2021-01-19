@@ -19,11 +19,11 @@ const initialGameState = {
 };
 const Game = ({ artistName, gameOptions }) => {
 	const [ gameState, dispatch ] = useReducer(gameReducer, initialGameState);
-
 	return (
 		<div className="game">
 			{gameState.currentRound <= 5 ? (
 				<Round
+					key={gameState.currentRound}
 					currentRound={gameState.currentRound}
 					gameDispatch={dispatch}
 					gameScore={gameState.gameScore}
