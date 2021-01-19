@@ -96,6 +96,7 @@ const Round = ({ currentRound, gameDispatch, gameScore, roundOptions, correctOpt
 							disabled={roundState.selectedOptions.includes(index)}
 							onClick={handleOptionClick}
 							className="round__option"
+							style={{ '--animation-order': index + 1 }}
 						>
 							{option.song}
 						</button>
