@@ -25,9 +25,9 @@ const initialState = {
 	secondsRemaining: 45,
 	selectedOptions: []
 };
-function getRoundScore(attempts, endedByCorrectAnswer) {
-	if (attempts === 0 && !endedByCorrectAnswer) return 0;
-	if (attempts === 0 && endedByCorrectAnswer) return 10;
+function getRoundScore(attempts, timeIsOver) {
+	if (timeIsOver) return 0;
+	if (attempts === 0 && !timeIsOver) return 10;
 	return 10 - attempts * 2;
 }
 
@@ -51,7 +51,7 @@ const Round = ({ currentRound, gameDispatch, gameScore, roundOptions, correctOpt
 	useEffect(
 		() => {
 			if (roundState.secondsRemaining === 0) {
-				const roundScore = getRoundScore(attemptsRef.current, false);
+				const roundScore = getRoundScore(attemptsRef.current, true);
 				gameDispatch({ type: 'ENDED_ROUND', payload: { roundScore } });
 			}
 		},
@@ -61,7 +61,7 @@ const Round = ({ currentRound, gameDispatch, gameScore, roundOptions, correctOpt
 	function handleOptionClick(ev) {
 		const selectedSong = ev.target.value;
 		if (selectedSong === correctOption.song) {
-			const roundScore = getRoundScore(attemptsRef.current, true);
+			const roundScore = getRoundScore(attemptsRef.current, false);
 			gameDispatch({ type: 'ENDED_ROUND', payload: { roundScore } });
 			return;
 		}
