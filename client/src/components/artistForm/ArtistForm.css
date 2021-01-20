@@ -31,3 +31,7 @@
 .artist-form__submit:disabled {
 	background-color: rgba(103, 123, 196, 0.25);
 }
+.artist-form__submit:active {
+	transition: all linear 50ms;
+	transform: scaleX(0.97) scaleY(0.99);
+}

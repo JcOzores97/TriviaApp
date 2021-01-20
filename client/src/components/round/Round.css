@@ -38,7 +38,13 @@
 
 .round__option:disabled {
 	background-color: rgba(103, 123, 196, 0.25);
+	color: rgba(255, 255, 255, 0.25);
 }
+.round__option:active {
+	transition: all linear 50ms;
+	transform: scaleX(0.97) scaleY(0.99);
+}
+
 .round__options-container {
 	display: flex;
 	flex-direction: column;
