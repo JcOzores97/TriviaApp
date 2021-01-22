@@ -95,7 +95,7 @@ const ArtistForm = ({ appDispatch, setFormSubmitted }) => {
 		try {
 			const songs = await fetchArtistSongs(artistName.replace(' ', '%20'));
 			const formattedSongs = getFormattedSongs(songs);
-			const randomSongs = getRandomElements(formattedSongs, 10);
+			const randomSongs = getRandomElements(formattedSongs, 12);
 			const optionsWithLyrics = await fetchOptionsWithLyrics(randomSongs, artistName.replace(' ', '-'), 5);
 			const optionsWithLyricsSongs = optionsWithLyrics.map((option) => option.song);
 			const notFetchedSongs = formattedSongs.filter((song) => optionsWithLyricsSongs.includes(song) === false);
