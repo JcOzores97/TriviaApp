@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const dotenv = require('dotenv');
 const btoa = require('btoa');
+const { response } = require('express');
 dotenv.config();
 let apiController = {};
 
@@ -159,47 +160,70 @@ apiController.sendSongsLyrics = async (songs, artistName, lyricsQuantity, res) =
 
 	for (let index = 0; songsWithLyrics.length < lyricsQuantity && index < songs.length; index++) {
 		//se itera hasta que no haya más canciones para buscar letras o se haya generado la cantidad de letras pedida
+		try {
+			const currentSong = songs[index];
+			const formattedCurrentSong = getFormattedSong(currentSong);
 
-		const currentSong = songs[index];
-		const searchResponse = await fetch(
-			`${baseApiURL}/track.search?format=json&q_track=${currentSong.replace(
-				/" "/g,
-				'%20'
-			)}&q_artist=${artistName.replace(/" "/g, '%20')}&f_has_lyrics=1&quorum_factor=1&apikey=${process.env
-				.MUSIXMATCH_API_KEY}`
-		);
-		const searchResults = await searchResponse.json();
-		const noResults = searchResults.message.body.track_list.length === 0;
-
-		const isASongCoincidenceWithLyrics = noResults
-			? false
-			: searchResults.message.body.track_list[0].track.track_name.toLowerCase() === currentSong.toLowerCase();
-		if (isASongCoincidenceWithLyrics) {
-			const songId = searchResults.message.body.track_list[0].track.track_id;
-
-			const songResponse = await fetch(
-				`${baseApiURL}/track.lyrics.get?format=json&track_id=${songId}&apikey=${process.env.MUSIXMATCH_API_KEY}`
+			const searchResponse = await fetch(
+				`${baseApiURL}/track.search?format=json&q_track=${encodeURIComponent(
+					formattedCurrentSong
+				)}&q_artist=${artistName.replace(/" "/g, '%20')}&f_has_lyrics=1&quorum_factor=1&apikey=${process.env
+					.MUSIXMATCH_API_KEY}`
 			);
-			const lyricsObject = await songResponse.json();
-			const splittedLyrics = lyricsObject.message.body.lyrics.lyrics_body
-				.split(/\n/)
-				.filter((chunk) => chunk !== '');
-			const randomIndex = Math.floor(Math.random() * (splittedLyrics.length - 3));
-			songsWithLyrics.push({
-				lyrics: [
-					`"${splittedLyrics[randomIndex]}`,
-					splittedLyrics[randomIndex + 1],
-					`${splittedLyrics[randomIndex + 2]}"`
-				],
-				song: currentSong
-			});
+			if (searchResponse.status === 500 || searchResponse.status === 503) {
+				throw new Error('Lyrics provider error');
+			}
+
+			const searchResults = await searchResponse.json();
+			const noResults = searchResults.message.body.track_list.length === 0;
+
+			const isASongCoincidenceWithLyrics = noResults
+				? false
+				: searchResults.message.body.track_list[0].track.track_name.toLowerCase() ===
+					formattedCurrentSong.toLowerCase();
+			if (isASongCoincidenceWithLyrics) {
+				const songId = searchResults.message.body.track_list[0].track.track_id;
+
+				const songResponse = await fetch(
+					`${baseApiURL}/track.lyrics.get?format=json&track_id=${songId}&apikey=${process.env
+						.MUSIXMATCH_API_KEY}`
+				);
+				const lyricsObject = await songResponse.json();
+				const splittedLyrics = lyricsObject.message.body.lyrics.lyrics_body
+					.split(/\n/)
+					.filter((chunk) => chunk !== '');
+				const randomIndex = Math.floor(Math.random() * (splittedLyrics.length - 3));
+				songsWithLyrics.push({
+					lyrics: [
+						`"${splittedLyrics[randomIndex]}`,
+						splittedLyrics[randomIndex + 1],
+						`${splittedLyrics[randomIndex + 2]}"`
+					],
+					song: currentSong
+				});
+			}
+		} catch (error) {
+			if (searchResponse.status === 500 || searchResponse.status === 503) {
+				throw error;
+			}
 		}
 	}
+
 	if (songsWithLyrics.length < lyricsQuantity) {
 		res.status(200).send({ songs: [] });
 	} else {
 		res.status(200).send({ songs: songsWithLyrics });
 	}
 };
+
+function getFormattedSong(song) {
+	const regExp = /\(|\||\bfeat\b|\bfeaturing\b|\//;
+	let formattedSong = song.toLowerCase().replace(/'/g, '');
+	const searchResult = formattedSong.search(regExp);
+	if (searchResult !== -1) {
+		formattedSong = formattedSong.slice(0, searchResult);
+	}
+	return formattedSong.trim();
+}
 
 module.exports = apiController;

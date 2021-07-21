@@ -18,7 +18,7 @@ router.post('/artist/:name/lyrics/:lyricsQty', async (req, res) => {
 	try {
 		await sendSongsLyrics(req.body.songs, req.params.name, req.params.lyricsQty, res);
 	} catch (err) {
-		res.status(500).send('Internal server error');
+		res.status(500).send(`${error.message === 'Lyrics provider error' ? error.message : 'Internal Server Error'}`);
 	}
 });
 
