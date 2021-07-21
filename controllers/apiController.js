@@ -195,9 +195,11 @@ apiController.sendSongsLyrics = async (songs, artistName, lyricsQuantity, res) =
 			});
 		}
 	}
-	if (songsWithLyrics.length < lyricsQuantity) res.status(200).send([]);
-
-	res.status(200).send(songsWithLyrics);
+	if (songsWithLyrics.length < lyricsQuantity) {
+		res.status(200).send({ songs: [] });
+	} else {
+		res.status(200).send({ songs: songsWithLyrics });
+	}
 };
 
 module.exports = apiController;
