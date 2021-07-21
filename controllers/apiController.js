@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 const dotenv = require('dotenv');
 const btoa = require('btoa');
-const { response } = require('express');
 dotenv.config();
 let apiController = {};
 
@@ -143,7 +142,7 @@ function shuffleArr(arr) {
 function getFilteredTrackNames(trackNames) {
 	//quitar de los resultados las canciones cuyo nombre indiquen versiones no deseables
 	const filteredNames = trackNames.filter((trackName) => {
-		return /karaoke|commentary|instrumental|sessions|remix/gi.test(trackName) === false;
+		return /live|version|karaoke|commentary|instrumental|sessions|remix/gi.test(trackName) === false;
 	});
 	return filteredNames;
 }
