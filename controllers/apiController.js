@@ -3,6 +3,8 @@ const dotenv = require('dotenv');
 const btoa = require('btoa');
 dotenv.config();
 let apiController = {};
+
+//SEND SONGS FROM RANDOM ALBUMS
 apiController.sendSongsFromRandomAlbums = async (artistName, maxAlbums, res) => {
 	//devuelve los nombres de las canciones de una serie de álbumes del artistName dado.
 	//esos álbumes son escogidos al azar y su cantidad máxima depende de maxAlbums
@@ -144,4 +146,58 @@ function getFilteredTrackNames(trackNames) {
 	});
 	return filteredNames;
 }
+
+//SEND SONGS LYRICS
+apiController.sendSongsLyrics = async (songs, artistName, lyricsQuantity, res) => {
+	//devuelve una lista de canciones con letras del tamaño indicado por lyricsQuantity.
+	//si no se encuentra la cantidad deseada de letras, se retorna []
+	// Las letras son un fragmento al azar de la letra total de la canción
+
+	let songsWithLyrics = [];
+
+	const baseApiURL = 'https://api.musixmatch.com/ws/1.1';
+
+	for (let index = 0; songsWithLyrics.length < lyricsQuantity && index < songs.length; index++) {
+		//se itera hasta que no haya más canciones para buscar letras o se haya generado la cantidad de letras pedida
+
+		const currentSong = songs[index];
+		const searchResponse = await fetch(
+			`${baseApiURL}/track.search?format=json&q_track=${currentSong.replace(
+				/" "/g,
+				'%20'
+			)}&q_artist=${artistName.replace(/" "/g, '%20')}&f_has_lyrics=1&quorum_factor=1&apikey=${process.env
+				.MUSIXMATCH_API_KEY}`
+		);
+		const searchResults = await searchResponse.json();
+		const noResults = searchResults.message.body.track_list.length === 0;
+
+		const isASongCoincidenceWithLyrics = noResults
+			? false
+			: searchResults.message.body.track_list[0].track.track_name.toLowerCase() === currentSong.toLowerCase();
+		if (isASongCoincidenceWithLyrics) {
+			const songId = searchResults.message.body.track_list[0].track.track_id;
+
+			const songResponse = await fetch(
+				`${baseApiURL}/track.lyrics.get?format=json&track_id=${songId}&apikey=${process.env.MUSIXMATCH_API_KEY}`
+			);
+			const lyricsObject = await songResponse.json();
+			const splittedLyrics = lyricsObject.message.body.lyrics.lyrics_body
+				.split(/\n/)
+				.filter((chunk) => chunk !== '');
+			const randomIndex = Math.floor(Math.random() * (splittedLyrics.length - 3));
+			songsWithLyrics.push({
+				lyrics: [
+					`"${splittedLyrics[randomIndex]}`,
+					splittedLyrics[randomIndex + 1],
+					`${splittedLyrics[randomIndex + 2]}"`
+				],
+				song: currentSong
+			});
+		}
+	}
+	if (songsWithLyrics.length < lyricsQuantity) res.status(200).send([]);
+
+	res.status(200).send(songsWithLyrics);
+};
+
 module.exports = apiController;

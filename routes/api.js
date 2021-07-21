@@ -1,5 +1,5 @@
 const express = require('express');
-const { sendSongsFromRandomAlbums } = require('../controllers/apiController');
+const { sendSongsFromRandomAlbums, sendSongsLyrics } = require('../controllers/apiController');
 const router = express.Router();
 
 router.get('/artist/:name/songs/:maxAlbumsQty', async (req, res) => {
@@ -11,6 +11,14 @@ router.get('/artist/:name/songs/:maxAlbumsQty', async (req, res) => {
 		} else {
 			res.status(500).send('Internal Server Error');
 		}
+	}
+});
+
+router.post('/artist/:name/lyrics/:lyricsQty', async (req, res) => {
+	try {
+		await sendSongsLyrics(req.body.songs, req.params.name, req.params.lyricsQty, res);
+	} catch (err) {
+		res.status(500).send('Internal server error');
 	}
 });
 
