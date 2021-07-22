@@ -7,52 +7,21 @@ async function fetchArtistSongs(artistName) {
 	if (res.status === 500) throw new Error('server error');
 	return await res.json();
 }
-function getFormattedSongs(songs) {
-	const regExp = /\(|\||\bfeat\b|\bfeaturing\b|\//;
-	return songs.map((song) => {
-		let formattedSong = song.toLowerCase();
-		const searchResult = formattedSong.search(regExp);
-		if (searchResult !== -1) {
-			formattedSong = formattedSong.slice(0, searchResult);
-		}
-		return formattedSong.trim();
-	});
-}
 
 async function fetchOptionsWithLyrics(songs, artist, optionsQuantity) {
-	let optionsWithLyrics = [];
-	let remainingSongs = [ ...songs ];
-	for (let index = 0; optionsWithLyrics.length < optionsQuantity && remainingSongs.length > 0; index++) {
-		//se itera hasta que no haya más canciones para buscar letras o se haya generado la cantidad de opciones pedida
-		//En cada iteración:
-		//- la canción de la que se buscara letras se obtiene de songs
-		//- la eliminación de aquella canción de la que se buscará letras se hace sobre remainingSongs
-		try {
-			const currentSong = songs[index];
-			remainingSongs = remainingSongs.filter((s, ind, arr) => ind !== arr.indexOf(currentSong));
-			const apiResponse = await fetch(`https://api.lyrics.ovh/v1/${artist}/${currentSong}`);
-			if (!apiResponse.ok) throw new Error();
-			const lyricsObject = await apiResponse.json();
-			const songWithLyrics = lyricsObject.lyrics !== '' && lyricsObject.lyrics !== '[Instrumental]';
-			if (!songWithLyrics) throw new Error();
-			const splittedLyrics = lyricsObject.lyrics.split(/\n/).filter((chunk) => chunk !== '');
-			const randomIndex = Math.floor(Math.random() * (splittedLyrics.length - 3));
-			optionsWithLyrics.push({
-				lyrics: [
-					`"${splittedLyrics[randomIndex]}`,
-					splittedLyrics[randomIndex + 1],
-					`${splittedLyrics[randomIndex + 2]}"`
-				],
-				song: currentSong
-			});
-		} catch (error) {
-			//se atrapa posible error para que no salte al catch exterior
-			//queremos que si no se encuentra una canción, se ignore el error y se busque letra de la canción siguiente
-		}
-	}
-	if (optionsWithLyrics.length < optionsQuantity) throw new Error('insufficient lyrics');
-
-	return optionsWithLyrics;
+	//artist has to be URL encoded
+	const url = `api/artist/${artist}/lyrics/${optionsQuantity}`;
+	const requestBody = JSON.stringify({ songs });
+	const songsWithlyrics = await fetch(url, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: requestBody
+	});
+	const optionsWithLyrics = await songsWithlyrics.json();
+	if (optionsWithLyrics.songs.length === 0) throw new Error('Insufficient lyrics');
+	return optionsWithLyrics.songs;
 }
 
 function getRoundOptions(optionWithLyrics, songs) {
@@ -94,11 +63,14 @@ const ArtistForm = ({ appDispatch, setFormSubmitted }) => {
 	async function fetchGameOptions(artistName, dispatch) {
 		try {
 			const songs = await fetchArtistSongs(artistName.replace(' ', '%20'));
-			const formattedSongs = getFormattedSongs(songs);
-			const randomSongs = getRandomElements(formattedSongs, 12);
-			const optionsWithLyrics = await fetchOptionsWithLyrics(randomSongs, artistName.replace(' ', '-'), 5);
+			const randomSongs = getRandomElements(songs, 12);
+			const optionsWithLyrics = await fetchOptionsWithLyrics(
+				randomSongs,
+				artistName.toLowerCase().replace(/" "/g, ''),
+				5
+			);
 			const optionsWithLyricsSongs = optionsWithLyrics.map((option) => option.song);
-			const notFetchedSongs = formattedSongs.filter((song) => optionsWithLyricsSongs.includes(song) === false);
+			const notFetchedSongs = songs.filter((song) => optionsWithLyricsSongs.includes(song) === false);
 			const gameOptions = optionsWithLyrics.map((optionWithLyrics) =>
 				getRoundOptions(optionWithLyrics, notFetchedSongs)
 			);
