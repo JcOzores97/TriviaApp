@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('triviaapp:server');
 var http = require('http');
+let gameApi = require('../api/gameApi');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +21,15 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+
+//socket io
+gameApi.io.attach(server, {
+	cors: {
+		// origin: 'http://localhost:3000',
+		origin: '*',
+		methods: [ 'GET', 'POST' ]
+	}
+});
 
 /**
  * Listen on provided port, on all network interfaces.
