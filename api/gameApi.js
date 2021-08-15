@@ -1,5 +1,12 @@
 const io = require('socket.io')();
 const events = require('events');
+const admin = require('firebase-admin');
+admin.initializeApp({
+	credential: admin.credential.applicationDefault(),
+	databaseURL: 'https://trivia-app-946d2.firebaseio.com'
+});
+
+const db = admin.firestore();
 
 const gameApi = {
 	io: io
@@ -7,58 +14,61 @@ const gameApi = {
 
 const gameConfig = {
 	secondsPerRound: 45,
-	roundsQuantity: 3
+	roundsQuantity: 5
 };
-
-const exampleOptions = [
-	[ 'song1.1', 'song1.2', 'song1.3', 'song1.4' ],
-	[ 'song2.1', 'song2.2', 'song2.3', 'song2.4' ]
-];
-const exampleLyrics = 'lorem ipsum lorem ipsum lorem ipsum lorem ipsum ';
-const exampleCorrectAnswer = 'song1.2';
 
 //socket events to emit:
 //newRound
-//wrongAnswer
 //secondsRemainingUpdate
 //gameOver
+//artistsReady
 
 //socket events to listen :
 //selectedOption
+//selectedArtist (only one time)
 
-io.on('connection', function(socket) {
+io.on('connection', async function(socket) {
 	const eventEmitter = new events.EventEmitter();
+	const availableArtists = await getAvailableArtists();
+	const availableArtistsNames = availableArtists.map((artist) => artist.name);
+
+	socket.emit('artistsReady', availableArtistsNames);
+
+	socket.once('selectedArtist', (selectedArtist) => {
+		const selectedArtistId = getArtistId(selectedArtist, availableArtists).toString();
+		eventEmitter.emit('gameStart', selectedArtistId);
+	});
 
 	let secondsRemaining = gameConfig.secondsPerRound;
 	let currentRound = 1;
 	let score = 0;
 	let roundAttempts = 0;
-	const options = exampleOptions;
-	const correctAnswer = exampleCorrectAnswer;
-	const lyrics = exampleLyrics;
+	let options = null;
 	let timerId = null;
 
-	eventEmitter.on('gameStart', handleGameStart);
+	eventEmitter.once('gameStart', handleGameStart);
 
 	eventEmitter.on('newRound', handleNewRound);
 
 	eventEmitter.on('roundEnd', handleRoundEnd);
 
-	eventEmitter.on('gameOver', handleGameOver);
+	eventEmitter.once('gameOver', handleGameOver);
 
-	eventEmitter.emit('gameStart');
+	async function handleGameStart(artistId) {
+		options = await getGameOptions(artistId, gameConfig.roundsQuantity);
 
-	function handleGameStart() {
 		socket.on('selectedOption', (clientData) => {
-			if (clientData.answer === correctAnswer) {
+			const correctOption = options[currentRound - 1].correctOption;
+
+			if (clientData.answer === correctOption) {
 				eventEmitter.emit('roundEnd', false);
 			} else {
 				roundAttempts++;
-				socket.emit('wrongAnswer', { result: false });
 			}
 		});
 		eventEmitter.emit('newRound');
 	}
+
 	function handleNewRound() {
 		const timer = setInterval(() => {
 			secondsRemaining--;
@@ -70,7 +80,12 @@ io.on('connection', function(socket) {
 
 		timerId = timer;
 
-		socket.emit('newRound', { currentRound, options: options[currentRound - 1], lyrics, score });
+		socket.emit('newRound', {
+			currentRound,
+			roundOptions: options[currentRound - 1].options,
+			roundLyrics: options[currentRound - 1].lyrics,
+			score
+		});
 	}
 
 	function handleRoundEnd(endedByTimeover) {
@@ -98,6 +113,74 @@ function getRoundScore(attempts, timeIsOver) {
 	if (timeIsOver) return 0;
 	if (attempts === 1) return 10;
 	return 10 - attempts * 2;
+}
+
+async function getAvailableArtists() {
+	const docRef = db.collection('gameInfo').doc('artists');
+	const doc = await docRef.get();
+	const docData = doc.data();
+	return docData.available;
+}
+
+function getArtistId(artistName, artistsList) {
+	return artistsList.find((artist) => artist.name === artistName).id;
+}
+
+async function getGameOptions(artistId, roundsQuantity) {
+	const { trackNames, tracksWithLyricsQuantity } = await getArtistInfo(artistId);
+	const randomIndexes = getRandomNumbers(roundsQuantity, tracksWithLyricsQuantity - 1);
+	const promisesArr = randomIndexes.map((randomIndex) => getSongWithLyrics(artistId, randomIndex.toString()));
+	const documents = await Promise.all(promisesArr);
+	const songsWithLyrics = documents.map((doc) => doc.data());
+	const songsWithLyricsNames = songsWithLyrics.map((song) => song.name);
+
+	const filteredTrackNames = trackNames.filter((track) => !songsWithLyricsNames.includes(track));
+
+	return songsWithLyrics.map((songWithLyrics) => {
+		return {
+			options: shuffleArr([ songWithLyrics.name, ...getRandomTrackNames(3, filteredTrackNames) ]),
+			correctOption: songWithLyrics.name,
+			lyrics: getRandomLyrics(songWithLyrics.lyrics)
+		};
+	});
+}
+
+async function getArtistInfo(artistId) {
+	const docRef = db.collection('songs').doc(artistId);
+	const doc = await docRef.get();
+	return doc.data();
+}
+
+async function getSongWithLyrics(artistId, songId) {
+	//returns a Promise
+	const docRef = db.collection('songs').doc(artistId).collection('withLyrics').doc(songId);
+	return docRef.get();
+}
+
+function getRandomTrackNames(tracksQty, tracks) {
+	const randomIndexes = getRandomNumbers(tracksQty, tracks.length - 1);
+	return randomIndexes.map((randomIndex) => tracks[randomIndex]);
+}
+
+function getRandomLyrics(lyricsArr) {
+	const randomIndex = Math.floor(Math.random() * (lyricsArr.length - 4));
+	return [ `"${lyricsArr[randomIndex]}`, `${lyricsArr[randomIndex + 1]}`, `${lyricsArr[randomIndex + 2]}"` ];
+}
+
+function getRandomNumbers(qty, maxNumber) {
+	//incluye el maxNumber
+	const indexes = Array.from(Array(maxNumber), (_, index) => index);
+	let randomNumbers = shuffleArr(indexes);
+	return randomNumbers.slice(0, qty);
+}
+function shuffleArr(arr) {
+	//Fisher–Yates shuffle
+	let shuffledArr = [ ...arr ];
+	for (let i = 0; i < arr.length - 2; i++) {
+		let random = Math.floor(Math.random() * (arr.length - i) + i);
+		[ shuffledArr[random], shuffledArr[i] ] = [ shuffledArr[i], shuffledArr[random] ];
+	}
+	return shuffledArr;
 }
 
 module.exports = gameApi;
