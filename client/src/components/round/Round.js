@@ -1,74 +1,33 @@
-import React, { useEffect, useReducer, useRef } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import { SocketContext } from '../../contexts/socket.js';
 import RoundIndicator from '../roundIndicator/RoundIndicator.js';
 import RoundInfo from '../roundInfo/RoundInfo.js';
 import { ReactComponent as ClockIcon } from '../icons/clockIcon.svg';
 import { ReactComponent as StarIcon } from '../icons/starIcon.svg';
 import './Round.css';
-function roundReducer(state, action) {
-	switch (action.type) {
-		case 'TICK':
-			return { ...state, secondsRemaining: state.secondsRemaining - 1 };
-		case 'ROUND_STARTS':
-			return { ...initialState };
-		case 'OPTION_SELECTED':
-			return {
-				...state,
-				attempts: state.attempts + 1,
-				selectedOptions: state.selectedOptions.concat(action.payload.optionIndex)
-			};
-		default:
-			throw new Error('invalid action in round reducer');
-	}
-}
-const initialState = {
-	attempts: 0,
-	secondsRemaining: 45,
-	selectedOptions: []
-};
-function getRoundScore(attempts, timeIsOver) {
-	if (timeIsOver) return 0;
-	if (attempts === 0 && !timeIsOver) return 10;
-	return 10 - attempts * 2;
-}
 
-const Round = ({ currentRound, gameDispatch, gameScore, roundOptions, correctOption }) => {
-	const [ roundState, dispatch ] = useReducer(roundReducer, initialState);
-	const attemptsRef = useRef(0);
-	attemptsRef.current = roundState.attempts;
+const Round = ({ currentRound, gameScore, roundOptions, roundLyrics }) => {
+	const socket = useContext(SocketContext);
+	const [ selectedOptions, setSelectedOptions ] = useState([]);
+	const [ secondsRemaining, setSecondsRemaining ] = useState('45');
 
 	useEffect(
 		() => {
-			dispatch({ type: 'ROUND_STARTS' });
-			const intervalo = setInterval(() => {
-				dispatch({ type: 'TICK' });
-			}, 1000);
+			socket.on('secondsRemainingUpdate', (secondsUpdate) => {
+				setSecondsRemaining(secondsUpdate);
+			});
+
 			return () => {
-				clearInterval(intervalo);
+				socket.off('secondsRemainingUpdate');
+				setSelectedOptions([]);
 			};
 		},
 		[ currentRound ]
 	);
-	useEffect(
-		() => {
-			if (roundState.secondsRemaining === 0) {
-				const roundScore = getRoundScore(attemptsRef.current, true);
-				gameDispatch({ type: 'ENDED_ROUND', payload: { roundScore } });
-			}
-		},
-		[ roundState.secondsRemaining, gameDispatch ]
-	);
 
 	function handleOptionClick(ev) {
-		const selectedSong = ev.target.value;
-		if (selectedSong === correctOption.song) {
-			const roundScore = getRoundScore(attemptsRef.current, false);
-			gameDispatch({ type: 'ENDED_ROUND', payload: { roundScore } });
-			return;
-		}
-		dispatch({
-			type: 'OPTION_SELECTED',
-			payload: { optionIndex: roundOptions.findIndex((opt) => opt.song === selectedSong) }
-		});
+		setSelectedOptions([ ...selectedOptions, ev.target.value ]);
+		socket.emit('selectedOption', { answer: ev.target.value });
 	}
 	return (
 		<div className="round">
@@ -77,28 +36,26 @@ const Round = ({ currentRound, gameDispatch, gameScore, roundOptions, correctOpt
 				<RoundInfo info={gameScore}>
 					<StarIcon />
 				</RoundInfo>
-				<RoundInfo info={roundState.secondsRemaining}>
+				<RoundInfo info={secondsRemaining}>
 					<ClockIcon />
 				</RoundInfo>
 			</div>
 
 			<div className="round__lyrics">
-				{correctOption.lyrics.map((lyric, index) => {
-					return <p key={index}>{lyric}</p>;
-				})}
+				{roundLyrics.map((parragraph, index) => <p key={index}>{parragraph}</p>)}
 			</div>
 			<div className="round__options-container">
 				{roundOptions.map((option, index) => {
 					return (
 						<button
-							value={option.song}
-							key={index}
-							disabled={roundState.selectedOptions.includes(index)}
+							value={option}
+							key={option}
+							disabled={selectedOptions.includes(option)}
 							onClick={handleOptionClick}
 							className="round__option"
 							style={{ '--animation-order': index + 1 }}
 						>
-							{option.song}
+							{option}
 						</button>
 					);
 				})}

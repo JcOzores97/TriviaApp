@@ -1,37 +1,52 @@
-import React, { useReducer } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Round from '../round/Round.js';
 import FinalResults from '../finalResults/FinalResults.js';
 import './Game.css';
-function gameReducer(state, action) {
-	switch (action.type) {
-		case 'ENDED_ROUND':
-			return {
-				currentRound: state.currentRound + 1,
-				gameScore: state.gameScore + action.payload.roundScore
-			};
-		default:
-			throw new Error();
-	}
-}
+
+import { SocketContext } from '../../contexts/socket.js';
+import Loader from '../loader/Loader.js';
+
 const initialGameState = {
 	currentRound: 1,
-	gameScore: 0
+	score: 0,
+	roundOptions: null,
+	roundLyrics: null
 };
-const Game = ({ artistName, gameOptions }) => {
-	const [ gameState, dispatch ] = useReducer(gameReducer, initialGameState);
+
+const Game = ({ artistName }) => {
+	const socket = useContext(SocketContext);
+	const [ gameOver, setGameOver ] = useState(false);
+	const [ gameState, setGameState ] = useState(initialGameState);
+
+	useEffect(() => {
+		socket.on('newRound', (newGameState) => {
+			setGameState(newGameState);
+		});
+		socket.on('gameOver', ({ totalScore }) => {
+			setGameOver(true);
+			setGameState((gameState) => {
+				return { ...gameState, score: totalScore };
+			});
+		});
+		return () => {
+			socket.off('newRound');
+			socket.off('gameOver');
+		};
+	}, []);
+
 	return (
 		<div className="game">
-			{gameState.currentRound <= 5 ? (
+			{gameOver ? (
+				<FinalResults gameScore={gameState.score} artistName={artistName} />
+			) : gameState.roundLyrics && gameState.roundOptions ? (
 				<Round
-					key={gameState.currentRound}
 					currentRound={gameState.currentRound}
-					gameDispatch={dispatch}
-					gameScore={gameState.gameScore}
-					roundOptions={gameOptions[gameState.currentRound - 1]}
-					correctOption={gameOptions[gameState.currentRound - 1].find((option) => 'lyrics' in option)}
+					gameScore={gameState.score}
+					roundOptions={gameState.roundOptions}
+					roundLyrics={gameState.roundLyrics}
 				/>
 			) : (
-				<FinalResults gameScore={gameState.gameScore} artistName={artistName} />
+				<Loader />
 			)}
 		</div>
 	);

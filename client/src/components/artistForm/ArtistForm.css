@@ -1,5 +1,5 @@
 .artist-form {
-	height: 300px;
+	height: 18rem;
 	width: 90%;
 	display: flex;
 	flex-direction: column;
@@ -10,8 +10,26 @@
 .artist-form__title {
 	font-size: 2.8rem;
 }
+
+.artist-form__loading {
+	height: 10rem;
+	display: flex;
+	align-items: center;
+}
+.artist-form__ready {
+	height: 10rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-evenly;
+	align-items: center;
+}
+
 .artist-form__label {
 	font-size: 1rem;
+	height: 4rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
 }
 .artist-form__input {
 	height: 1.75rem;
@@ -34,4 +52,18 @@
 .artist-form__submit:active {
 	transition: all linear 50ms;
 	transform: scaleX(0.97) scaleY(0.99);
+}
+
+select {
+	color: black;
+	height: 1.5rem;
+	text-transform: capitalize;
+}
+
+option {
+	text-transform: capitalize;
+}
+select,
+select option {
+	text-transform: capitalize;
 }
