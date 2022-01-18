@@ -49,7 +49,7 @@ const Round = ({ currentRound, gameScore, roundOptions, roundLyrics }) => {
 					return (
 						<button
 							value={option}
-							key={option}
+							key={`${option}_${currentRound}`}
 							disabled={selectedOptions.includes(option)}
 							onClick={handleOptionClick}
 							className="round__option"
