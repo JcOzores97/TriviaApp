@@ -45,6 +45,7 @@
 	border: 2px solid #677bc4;
 	border-radius: 2px;
 	font-weight: 500;
+	cursor: pointer;
 }
 .artist-form__submit:disabled {
 	background-color: rgba(103, 123, 196, 0.25);
@@ -58,11 +59,15 @@ select {
 	color: black;
 	height: 1.5rem;
 	text-transform: capitalize;
+	background-color: white;
+	border: solid 2px whitesmoke;
+	border-radius: 2px;
 }
 
 option {
 	text-transform: capitalize;
 }
+
 select,
 select option {
 	text-transform: capitalize;

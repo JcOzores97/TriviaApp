@@ -1,4 +1,5 @@
 const io = require('socket.io')();
+const { getRandomElements, getRandomNumbers, shuffleArr } = require('../utils/utils.js');
 const events = require('events');
 const admin = require('firebase-admin');
 admin.initializeApp({
@@ -138,7 +139,7 @@ async function getGameOptions(artistId, roundsQuantity) {
 
 	return songsWithLyrics.map((songWithLyrics) => {
 		return {
-			options: shuffleArr([ songWithLyrics.name, ...getRandomTrackNames(3, filteredTrackNames) ]),
+			options: shuffleArr([ songWithLyrics.name, ...getRandomElements(3, filteredTrackNames) ]),
 			correctOption: songWithLyrics.name,
 			lyrics: getRandomLyrics(songWithLyrics.lyrics)
 		};
@@ -157,30 +158,9 @@ async function getSongWithLyrics(artistId, songId) {
 	return docRef.get();
 }
 
-function getRandomTrackNames(tracksQty, tracks) {
-	const randomIndexes = getRandomNumbers(tracksQty, tracks.length - 1);
-	return randomIndexes.map((randomIndex) => tracks[randomIndex]);
-}
-
 function getRandomLyrics(lyricsArr) {
 	const randomIndex = Math.floor(Math.random() * (lyricsArr.length - 4));
 	return [ `"${lyricsArr[randomIndex]}`, `${lyricsArr[randomIndex + 1]}`, `${lyricsArr[randomIndex + 2]}"` ];
-}
-
-function getRandomNumbers(qty, maxNumber) {
-	//incluye el maxNumber
-	const indexes = Array.from(Array(maxNumber), (_, index) => index);
-	let randomNumbers = shuffleArr(indexes);
-	return randomNumbers.slice(0, qty);
-}
-function shuffleArr(arr) {
-	//Fisher–Yates shuffle
-	let shuffledArr = [ ...arr ];
-	for (let i = 0; i < arr.length - 2; i++) {
-		let random = Math.floor(Math.random() * (arr.length - i) + i);
-		[ shuffledArr[random], shuffledArr[i] ] = [ shuffledArr[i], shuffledArr[random] ];
-	}
-	return shuffledArr;
 }
 
 module.exports = gameApi;
